@@ -17,6 +17,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/serdev.h>
 #include <linux/slab.h>
+#include <linux/platform_device.h>
 #include <uapi/linux/sched/types.h>
 
 static int update_params=0;
@@ -126,6 +127,7 @@ module_param(axis_righty_antideadzone,int,0660);
 struct rsinput_driver {
     struct serdev_device *serdev;
     struct input_dev *input;
+    struct platform_device *platform_dev;
     struct regulator *vdd;
     struct gpio_desc *boot_gpio;
     struct gpio_desc *enable_gpio;
@@ -137,6 +139,9 @@ struct rsinput_driver {
     uint8_t rx_buf[1024];
     uint8_t sequence_number;
 };
+
+static bool rumble_enable = true;
+module_param(rumble_enable, bool, 0660);
 
 static const unsigned int keymap[] = {
     BTN_DPAD_UP, BTN_DPAD_DOWN, BTN_DPAD_LEFT, BTN_DPAD_RIGHT,
@@ -402,6 +407,45 @@ static const struct serdev_device_ops rsinput_rx_ops = {
     .receive_buf = rsinput_rx,
 };
 
+extern int qcom_spmi_haptics_global_upload(struct ff_effect *effect);
+extern int qcom_spmi_haptics_global_playback(int effect_id, int val);
+
+static int rsinput_rumble_upload(struct input_dev *dev, struct ff_effect *effect, struct ff_effect *old) {
+	if (!rumble_enable)
+		return 0;
+
+	return qcom_spmi_haptics_global_upload(effect);
+}
+static int rsinput_rumble_play(struct input_dev *dev, int effect_id, int val) {
+	if (!rumble_enable)
+		return 0;
+
+	return qcom_spmi_haptics_global_playback(effect_id, val);
+}
+
+//Show and store for rumble_enable
+static ssize_t rumble_enable_show(struct device *dev, struct device_attribute *attr,
+				  char *buf)
+{
+	return sprintf(buf, "%d\n", rumble_enable);
+}
+
+static ssize_t rumble_enable_store(struct device *dev, struct device_attribute *attr,
+				   const char *buf, size_t count)
+{
+	int ret;
+	bool val;
+
+	ret = kstrtobool(buf, &val);
+	if (ret)
+		return ret;
+
+	rumble_enable = val;
+	return count;
+}
+
+static DEVICE_ATTR_RW(rumble_enable);
+
 static int rsinput_probe(struct serdev_device *serdev) {
     struct rsinput_driver *drv;
     u32 gamepad_bus = 0;
@@ -541,6 +585,17 @@ static int rsinput_probe(struct serdev_device *serdev) {
 
     input_set_abs_params(drv->input, ABS_Z, 0, trigger_left_max - trigger_left_antideadzone, 0, 30);
     input_set_abs_params(drv->input, ABS_RZ, 0, trigger_right_max - trigger_right_antideadzone, 0, 30);
+
+    input_set_capability(drv->input, EV_FF, FF_PERIODIC);
+
+    error = input_ff_create(drv->input, 1);
+    if (error) {
+        pr_err("Unable to create force feedback dev!\n");
+        return error;
+    }
+
+    drv->input->ff->upload = rsinput_rumble_upload;
+    drv->input->ff->playback = rsinput_rumble_play;
 
     error = input_register_device(drv->input);
     if (error)
