@@ -410,6 +410,8 @@ static int is31fl32xx_parse_child_dt(const struct device *dev,
 	fwnode_property_read_u32(child, "led-max-microamp", &led_data->max_microamp);
 
 	cdev->brightness_set_blocking = is31fl32xx_brightness_set;
+	/* Turn the LEDs off across system suspend and restore them on resume */
+	cdev->flags |= LED_CORE_SUSPENDRESUME;
 
 	return 0;
 }
