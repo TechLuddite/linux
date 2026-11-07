@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/input/ayntec,odin2-gamepad.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: AYN Odin 2 gamepad controller
+
+maintainers:
+  - TBD-SUBMITTER
+
+description:
+  The built-in controls of AYN Odin 2 family handhelds (D-pad, face and
+  shoulder buttons, two analog sticks and two analog triggers) are scanned by
+  a microcontroller. The microcontroller streams state reports to the SoC
+  over a UART at 115200 baud.
+
+allOf:
+  - $ref: /schemas/serial/serial-peripheral-props.yaml#
+
+properties:
+  compatible:
+    const: ayntec,odin2-gamepad
+
+  vdd-supply:
+    description: Supply of the gamepad microcontroller.
+
+  enable-gpios:
+    maxItems: 1
+    description: GPIO that holds the microcontroller in reset when inactive.
+
+required:
+  - compatible
+  - vdd-supply
+  - enable-gpios
+
+unevaluatedProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/gpio/gpio.h>
+
+    serial {
+        mcu {
+            compatible = "ayntec,odin2-gamepad";
+            vdd-supply = <&vreg_bob2>;
+            enable-gpios = <&tlmm 12 GPIO_ACTIVE_HIGH>;
+        };
+    };
