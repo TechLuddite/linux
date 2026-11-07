@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Driver for ISSI IS31FL32xx family of I2C LED controllers
+ * and compatible controllers from Si-En and Heroic
  *
  * Copyright 2015 Allworx Corp.
  *
@@ -513,6 +514,23 @@ static const struct is31fl32xx_chipdef is31fl3235_cdef = {
 	.brightness_steps			= 256,
 };
 
+/*
+ * HTR3212: IS31FL3236A register layout, with its 12 channels at the
+ * PWM and LED control register offsets of IS31FL3236A channels 13 to 24.
+ */
+static const struct is31fl32xx_chipdef htr3212_cdef = {
+	.channels				= 12,
+	.shutdown_reg				= 0x00,
+	.pwm_update_reg				= 0x25,
+	.global_control_reg			= 0x4a,
+	.reset_reg				= 0x4f,
+	.output_frequency_setting_reg		= 0x4b,
+	.pwm_register_base			= 0x0d,
+	.led_control_register_base		= 0x32,
+	.enable_bits_per_led_control_register	= 1,
+	.brightness_steps			= 256,
+};
+
 static const struct is31fl32xx_chipdef is31fl3218_cdef = {
 	.channels				= 18,
 	.shutdown_reg				= 0x00,
@@ -557,6 +575,7 @@ static const struct is31fl32xx_chipdef is31fl3293_cdef = {
 };
 
 static const struct of_device_id of_is31fl32xx_match[] = {
+	{ .compatible = "heroic,htr3212",   .data = &htr3212_cdef, },
 	{ .compatible = "issi,is31fl3293",  .data = &is31fl3293_cdef, },
 	{ .compatible = "issi,is31fl3236",  .data = &is31fl3236_cdef, },
 	{ .compatible = "issi,is31fl3236a", .data = &is31fl3236a_cdef, },
@@ -637,6 +656,7 @@ static void is31fl32xx_remove(struct i2c_client *client)
  * even though it is not used for DeviceTree based instantiation.
  */
 static const struct i2c_device_id is31fl32xx_id[] = {
+	{ .name = "htr3212" },
 	{ .name = "is31fl3293" },
 	{ .name = "is31fl3236" },
 	{ .name = "is31fl3236a" },
