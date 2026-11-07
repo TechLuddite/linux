@@ -1,0 +1,97 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/leds/issi,is31fl3236.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: ISSI IS31FL32xx and Si-En SN32xx LED controllers
+
+maintainers:
+  - TBD-SUBMITTER
+
+description: |
+  The IS31FL32xx/SN32xx family of LED controllers are I2C devices with
+  multiple constant-current channels, each with independent 256-level PWM
+  control (4096-level on IS31FL3293). Each LED is represented as a sub-node
+  of the device.
+
+  For more product information please see the links below:
+    https://www.issi.com/US/product-analog-fxled-driver.shtml
+    https://www.si-en.com/product.asp?parentid=890
+
+properties:
+  compatible:
+    enum:
+      - issi,is31fl3216
+      - issi,is31fl3218
+      - issi,is31fl3235
+      - issi,is31fl3236
+      - issi,is31fl3236a
+      - issi,is31fl3293
+      - si-en,sn3216
+      - si-en,sn3218
+
+  reg:
+    maxItems: 1
+
+  "#address-cells":
+    const: 1
+
+  "#size-cells":
+    const: 0
+
+  issi,22khz-pwm:
+    type: boolean
+    description:
+      Select 22 kHz PWM output frequency instead of the default 3 kHz.
+      Only supported by controllers with an output frequency register.
+
+patternProperties:
+  "^led@[1-9a-f][0-9a-f]*$":
+    type: object
+    $ref: common.yaml#
+    unevaluatedProperties: false
+
+    properties:
+      reg:
+        description: LED channel number (1..N).
+        minimum: 1
+        maximum: 36
+
+      led-max-microamp:
+        description: Maximum LED current. Only used by IS31FL3293.
+
+    required:
+      - reg
+
+required:
+  - compatible
+  - reg
+  - "#address-cells"
+  - "#size-cells"
+
+additionalProperties: false
+
+examples:
+  - |
+    i2c {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        led-controller@3c {
+            compatible = "issi,is31fl3236";
+            reg = <0x3c>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            led@1 {
+                reg = <1>;
+                label = "EB:blue:usr0";
+            };
+
+            led@2 {
+                reg = <2>;
+                label = "EB:blue:usr1";
+            };
+        };
+    };
