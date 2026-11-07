@@ -7,6 +7,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/input/qcom,hv-haptics.h>
 #include "qcs8550-ayntec-common.dtsi"
 
 &{/} {
@@ -97,3 +98,440 @@
 	firmware-name = "qcom/sm8550/ayntec/odin2portal/aw883xx_acf.bin";
 };
 
+
+/* Out-of-tree hardware carried from ROCKNIX for the Portal: joystick LEDs, rumble, gamepad, internal microphone. */
+&{/} {
+	multi-ledr1 {
+		compatible = "leds-group-multicolor";
+		color = <LED_COLOR_ID_RGB>;
+		function = "r1";
+		leds = <&ledr_r4>, <&ledr_g4>, <&ledr_b4>;
+	};
+	multi-ledl1 {
+		compatible = "leds-group-multicolor";
+		color = <LED_COLOR_ID_RGB>;
+		function = "l1";
+		leds = <&ledl_r4>, <&ledl_g4>, <&ledl_b4>;
+	};
+	multi-ledr2 {
+		compatible = "leds-group-multicolor";
+		color = <LED_COLOR_ID_RGB>;
+		function = "r2";
+		leds = <&ledr_r1>, <&ledr_g1>, <&ledr_b1>;
+	};
+	multi-ledl2 {
+		compatible = "leds-group-multicolor";
+		color = <LED_COLOR_ID_RGB>;
+		function = "l2";
+		leds = <&ledl_r1>, <&ledl_g1>, <&ledl_b1>;
+	};
+	multi-ledr3 {
+		compatible = "leds-group-multicolor";
+		color = <LED_COLOR_ID_RGB>;
+		function = "r3";
+		leds = <&ledr_r2>, <&ledr_g2>, <&ledr_b2>;
+	};
+	multi-ledl3 {
+		compatible = "leds-group-multicolor";
+		color = <LED_COLOR_ID_RGB>;
+		function = "l3";
+		leds = <&ledl_r2>, <&ledl_g2>, <&ledl_b2>;
+	};
+	multi-ledr4 {
+		compatible = "leds-group-multicolor";
+		color = <LED_COLOR_ID_RGB>;
+		function = "r4";
+		leds = <&ledr_r3>, <&ledr_g3>, <&ledr_b3>;
+	};
+	multi-ledl4 {
+		compatible = "leds-group-multicolor";
+		color = <LED_COLOR_ID_RGB>;
+		function = "l4";
+		leds = <&ledl_r3>, <&ledl_g3>, <&ledl_b3>;
+	};
+};
+
+&i2c0 {
+	clock-frequency = <400000>;
+	status = "okay";
+
+	htr3212l: led-controller@3c {
+		compatible = "heroic,htr3212";
+		reg = <0x3c>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		sdb-gpios = <&tlmm 55 GPIO_ACTIVE_HIGH>;
+		vdd-supply = <&vdd_mcu_3v3>;
+
+		ledl_b1: led@1 {
+			reg = <1>;
+			label = "l:r1";
+			color = <LED_COLOR_ID_RED>;
+		};
+		ledl_g1: led@2 {
+			reg = <2>;
+			label = "l:g1";
+			color = <LED_COLOR_ID_GREEN>;
+		};
+		ledl_r1: led@3 {
+			reg = <3>;
+			label = "l:b1";
+			color = <LED_COLOR_ID_BLUE>;
+		};
+		ledl_b2: led@4 {
+			reg = <4>;
+			label = "l:r2";
+			color = <LED_COLOR_ID_RED>;
+		};
+		ledl_g2: led@5 {
+			reg = <5>;
+			label = "l:g2";
+			color = <LED_COLOR_ID_GREEN>;
+		};
+		ledl_r2: led@6 {
+			reg = <6>;
+			label = "l:b2";
+			color = <LED_COLOR_ID_BLUE>;
+		};
+		ledl_b3: led@7 {
+			reg = <7>;
+			label = "l:r3";
+			color = <LED_COLOR_ID_RED>;
+		};
+		ledl_g3: led@8 {
+			reg = <8>;
+			label = "l:g3";
+			color = <LED_COLOR_ID_GREEN>;
+		};
+		ledl_r3: led@9 {
+			reg = <9>;
+			label = "l:b3";
+			color = <LED_COLOR_ID_BLUE>;
+		};
+		ledl_b4: led@10 {
+			reg = <10>;
+			label = "l:r4";
+			color = <LED_COLOR_ID_RED>;
+		};
+		ledl_g4: led@11 {
+			reg = <11>;
+			label = "l:g4";
+			color = <LED_COLOR_ID_GREEN>;
+		};
+		ledl_r4: led@12 {
+			reg = <12>;
+			label = "l:b4";
+			color = <LED_COLOR_ID_BLUE>;
+		};
+	};
+};
+
+&i2c12 {
+	clock-frequency = <400000>;
+	status = "okay";
+
+	htr3212r: led-controller@3c {
+		compatible = "heroic,htr3212";
+		reg = <0x3c>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		sdb-gpios = <&tlmm 56 GPIO_ACTIVE_HIGH>;
+		vdd-supply = <&vdd_mcu_3v3>;
+
+		ledr_b1: led@1 {
+			reg = <1>;
+			label = "r:r1";
+			color = <LED_COLOR_ID_RED>;
+		};
+		ledr_g1: led@2 {
+			reg = <2>;
+			label = "r:g1";
+			color = <LED_COLOR_ID_GREEN>;
+		};
+		ledr_r1: led@3 {
+			reg = <3>;
+			label = "r:b1";
+			color = <LED_COLOR_ID_BLUE>;
+		};
+		ledr_b2: led@4 {
+			reg = <4>;
+			label = "r:r2";
+			color = <LED_COLOR_ID_RED>;
+		};
+		ledr_g2: led@5 {
+			reg = <5>;
+			label = "r:g2";
+			color = <LED_COLOR_ID_GREEN>;
+		};
+		ledr_r2: led@6 {
+			reg = <6>;
+			label = "r:b2";
+ 			color = <LED_COLOR_ID_BLUE>;
+		};
+		ledr_b3: led@7 {
+			reg = <7>;
+			label = "r:r3";
+			color = <LED_COLOR_ID_RED>;
+		};
+		ledr_g3: led@8 {
+			reg = <8>;
+			label = "r:g3";
+			color = <LED_COLOR_ID_GREEN>;
+		};
+		ledr_r3: led@9 {
+			reg = <9>;
+			label = "r:b3";
+			color = <LED_COLOR_ID_BLUE>;
+		};
+		ledr_b4: led@10 {
+			reg = <10>;
+			label = "r:r4";
+			color = <LED_COLOR_ID_RED>;
+		};
+		ledr_g4: led@11 {
+			reg = <11>;
+			label = "r:g4";
+			color = <LED_COLOR_ID_GREEN>;
+		};
+		ledr_r4: led@12 {
+			reg = <12>;
+			label = "r:b4";
+			color = <LED_COLOR_ID_BLUE>;
+		};
+	};
+};
+
+&pmk8550 {
+	pmk8550_sdam_9d00: nvram@9d00 {
+		compatible = "qcom,spmi-sdam";
+		reg = <0x9d00>;
+	};
+};
+
+&pm8550b {
+	pm8550b_hv_haptics: qcom,hv-haptics@f000 {
+		compatible = "qcom,hv-haptics";
+		reg = <0xf000>, <0xf100>, <0xf200>;
+		interrupts = <0x07 0xf0 0x1 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "fifo-empty";
+		qcom,vmax-mv = <5000>;
+		qcom,brake-mode = <BRAKE_CLOSE_LOOP>;
+		qcom,brake-pattern = /bits/ 8 <0xff 0x3f 0x1f>;
+		qcom,lra-period-us = <5880>;
+		qcom,drv-sig-shape = <WF_SINE>;
+		qcom,brake-sig-shape = <WF_SINE>;
+		qcom,use-erm = <0x01>;
+		nvmem-names = "hap_cfg_sdam";
+		nvmem = <&pmk8550_sdam_9d00>;
+		status = "okay";
+
+		hap_swr_slave_reg: qcom,hap-swr-slave-reg {
+			regulator-name = "hap-swr-slave-reg";
+		};
+
+		effect_0 {
+			qcom,effect-id = <0x00>;
+			/* qcom,wf-auto-res-disable; */
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data =  <0x15f 0x00 0x00>,
+						<0x17f 0x00 0x00>,
+						<0x19f 0x00 0x00>,
+						<0x1df 0x00 0x00>,
+						<0x1df 0x00 0x00>,
+						<0x19f 0x00 0x00>,
+						<0x17f 0x00 0x00>,
+						<0x15f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <5000>;
+		};
+
+		effect_1 {
+			qcom,effect-id = <0x01>;
+			/* qcom,wf-auto-res-disable; */
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data =  <0x01f 0x00 0x00>,
+						<0x03f 0x00 0x00>,
+						<0x05f 0x00 0x00>,
+						<0x07f 0x00 0x00>,
+						<0x17f 0x00 0x00>,
+						<0x15f 0x00 0x00>,
+						<0x13f 0x00 0x00>,
+						<0x11f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <3200>;
+		};
+
+		effect_2 {
+			qcom,effect-id = <0x02>;
+			/* qcom,wf-auto-res-disable; */
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data =  <0x01f 0x00 0x00>,
+						<0x03f 0x00 0x00>,
+						<0x05f 0x00 0x00>,
+						<0x07f 0x00 0x00>,
+						<0x17f 0x00 0x00>,
+						<0x15f 0x00 0x00>,
+						<0x13f 0x00 0x00>,
+						<0x11f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <3200>;
+		};
+
+		effect_3 {
+			qcom,effect-id = <0x03>;
+			/* qcom,wf-auto-res-disable; */
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data =  <0x01f 0x00 0x00>,
+						<0x03f 0x00 0x00>,
+						<0x05f 0x00 0x00>,
+						<0x07f 0x00 0x00>,
+						<0x17f 0x00 0x00>,
+						<0x15f 0x00 0x00>,
+						<0x13f 0x00 0x00>,
+						<0x11f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <3200>;
+		};
+
+		effect_4 {
+			qcom,effect-id = <0x04>;
+			/* qcom,wf-auto-res-disable; */
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data =  <0x01f 0x00 0x00>,
+						<0x03f 0x00 0x00>,
+						<0x05f 0x00 0x00>,
+						<0x07f 0x00 0x00>,
+						<0x17f 0x00 0x00>,
+						<0x15f 0x00 0x00>,
+						<0x13f 0x00 0x00>,
+						<0x11f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <3200>;
+		};
+
+		effect_5 {
+			qcom,effect-id = <0x05>;
+			/* qcom,wf-auto-res-disable; */
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data =  <0x11f 0x00 0x00>,
+						<0x13f 0x00 0x00>,
+						<0x15f 0x00 0x00>,
+						<0x17f 0x00 0x00>,
+						<0x17f 0x00 0x00>,
+						<0x15f 0x00 0x00>,
+						<0x13f 0x00 0x00>,
+						<0x11f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <5000>;
+		};
+
+		primitive_0 {
+			qcom,primitive-id = <0x00>;
+			qcom,wf-auto-res-disable;
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data = <0x00 0x00 0x00 0x00 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <2400>;
+		};
+
+		primitive_1 {
+			qcom,primitive-id = <0x01>;
+			qcom,wf-auto-res-disable;
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data = <0xff 0x00 0x00 0x7f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <2400>;
+		};
+
+		primitive_2 {
+			qcom,primitive-id = <0x02>;
+			qcom,wf-auto-res-disable;
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data = <0xff 0x00 0x00 0x7f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <2400>;
+		};
+
+		primitive_3 {
+			qcom,primitive-id = <0x03>;
+			qcom,wf-auto-res-disable;
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data = <0xff 0x00 0x00 0x7f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <2400>;
+		};
+
+		primitive_4 {
+			qcom,primitive-id = <0x04>;
+			qcom,wf-auto-res-disable;
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data = <0xff 0x00 0x00 0x7f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <2400>;
+		};
+
+		primitive_5 {
+			qcom,primitive-id = <0x05>;
+			qcom,wf-auto-res-disable;
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data = <0xff 0x00 0x00 0x7f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <2400>;
+		};
+
+		primitive_6 {
+			qcom,primitive-id = <0x06>;
+			qcom,wf-auto-res-disable;
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data = <0xff 0x00 0x00 0x7f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <2400>;
+		};
+
+		primitive_7 {
+			qcom,primitive-id = <0x07>;
+			qcom,wf-auto-res-disable;
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data = <0xff 0x00 0x00 0x7f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <2400>;
+		};
+
+		primitive_8 {
+			qcom,primitive-id = <0x08>;
+			qcom,wf-auto-res-disable;
+			qcom,wf-brake-pattern = /bits/ 8 <0x0 0x0 0x0>;
+			qcom,wf-pattern-data = <0xff 0x00 0x00 0x7f 0x00 0x00>;
+			qcom,wf-pattern-period-us = <5880>;
+			qcom,wf-vmax-mv = <2400>;
+		};
+	};
+};
+
+&uart15 {
+	status = "okay";
+
+	gamepad: gamepad {
+		compatible = "gamepad,rsinput";
+
+		gamepad-name = "AYN Odin2 Gamepad";
+		gamepad-bus = <0x0003>;
+		gamepad-vid = <0x2020>;
+		gamepad-pid = <0x3001>;
+		gamepad-rev = <0x0001>;
+
+		vdd-supply = <&vreg_bob2>;
+		enable-gpios = <&tlmm 12 GPIO_ACTIVE_HIGH>;
+		pinctrl-0 = <&mcu_en_active>;
+		pinctrl-names = "default";
+	};
+};
+
+&{/sound} {
+	audio-routing = "IN1_HPHL", "HPHL_OUT",
+			"IN2_HPHR", "HPHR_OUT",
+			"AMIC2", "MIC BIAS2",
+			"TX SWR_INPUT1", "ADC2_OUTPUT",
+			"DMIC3", "MIC BIAS3",
+			"TX SWR_INPUT7", "DMIC3_OUTPUT";
+};
