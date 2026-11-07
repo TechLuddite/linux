@@ -732,6 +732,8 @@ patternProperties:
     description: HEAD acoustics
   "^hechuang,.*":
     description: Shenzhen Hechuang Intelligent Co.
+  "^heroic,.*":
+    description: Heroic Electronic Technology (Jiaxing) Co., Ltd.
   "^hideep,.*":
     description: HiDeep Inc.
   "^himax,.*":
