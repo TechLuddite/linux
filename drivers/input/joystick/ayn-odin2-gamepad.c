@@ -3,7 +3,10 @@
  * Driver for the gamepad MCU found in AYN Odin 2 family handhelds
  *
  * The built-in controls (buttons, sticks and analog triggers) are scanned by
- * a microcontroller that streams state reports to the SoC over a UART.
+ * a microcontroller that streams state reports to the SoC over a UART. The
+ * rear grip buttons bypass the microcontroller and are wired to SoC GPIOs.
+ * Both are reported through one input device so that the controls appear as
+ * a single gamepad.
  *
  * Based on the RSInput driver by Teguh Sobirin, as carried by ROCKNIX.
  *
@@ -14,12 +17,15 @@
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/input.h>
+#include <linux/interrupt.h>
 #include <linux/minmax.h>
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
+#include <linux/mutex.h>
 #include <linux/regulator/consumer.h>
 #include <linux/serdev.h>
 #include <linux/unaligned.h>
+#include <linux/workqueue.h>
 
 #define ODIN2_GP_BAUDRATE		115200
 
@@ -58,6 +64,8 @@
 #define ODIN2_GP_TRIGGER_MAX		0x610
 #define ODIN2_GP_TRIGGER_FLAT		30
 
+#define ODIN2_GP_GRIP_DEBOUNCE_MS	20
+
 static const unsigned int odin2_gp_keymap[] = {
 	BTN_DPAD_UP,	BTN_DPAD_DOWN,	BTN_DPAD_LEFT,	BTN_DPAD_RIGHT,
 	BTN_NORTH,	BTN_WEST,	BTN_EAST,	BTN_SOUTH,
@@ -65,10 +73,19 @@ static const unsigned int odin2_gp_keymap[] = {
 	BTN_THUMBL,	BTN_THUMBR,	BTN_MODE,	BTN_BACK,
 };
 
+/* Order of the grip-gpios entries */
+static const unsigned int odin2_gp_grip_keymap[] = {
+	BTN_GRIPL, BTN_GRIPR,
+};
+
 struct odin2_gp {
 	struct serdev_device *serdev;
 	struct input_dev *input;
 	struct gpio_desc *enable_gpio;
+	struct gpio_descs *grips;
+	struct delayed_work grip_work;
+	/* Serialises reports from the UART and the grip buttons */
+	struct mutex report_lock;
 	u8 seq;
 	size_t rx_len;
 	u8 rx_buf[ODIN2_GP_FRAME_MAX];
@@ -140,6 +157,8 @@ static void odin2_gp_handle_status(struct odin2_gp *gp, const u8 *data, size_t l
 				     "short status report (%zu bytes)\n", len);
 		return;
 	}
+
+	guard(mutex)(&gp->report_lock);
 
 	buttons = get_unaligned_le16(data + ODIN2_GP_ST_BUTTONS);
 	for (i = 0; i < ARRAY_SIZE(odin2_gp_keymap); i++)
@@ -277,6 +296,91 @@ static int odin2_gp_mcu_init(struct odin2_gp *gp)
 	return odin2_gp_send(gp, ODIN2_GP_CMD_CONTROL, params, sizeof(params));
 }
 
+static void odin2_gp_grip_work(struct work_struct *work)
+{
+	struct odin2_gp *gp = container_of(to_delayed_work(work),
+					   struct odin2_gp, grip_work);
+	DECLARE_BITMAP(values, ARRAY_SIZE(odin2_gp_grip_keymap));
+	unsigned int i;
+	int ret;
+
+	ret = gpiod_get_array_value_cansleep(gp->grips->ndescs,
+					     gp->grips->desc,
+					     gp->grips->info, values);
+	if (ret) {
+		dev_err_ratelimited(&gp->serdev->dev,
+				    "failed to read grip buttons: %d\n", ret);
+		return;
+	}
+
+	guard(mutex)(&gp->report_lock);
+
+	for (i = 0; i < gp->grips->ndescs; i++)
+		input_report_key(gp->input, odin2_gp_grip_keymap[i],
+				 test_bit(i, values));
+	input_sync(gp->input);
+}
+
+static irqreturn_t odin2_gp_grip_irq(int irq, void *data)
+{
+	struct odin2_gp *gp = data;
+
+	mod_delayed_work(system_wq, &gp->grip_work,
+			 msecs_to_jiffies(ODIN2_GP_GRIP_DEBOUNCE_MS));
+
+	return IRQ_HANDLED;
+}
+
+static void odin2_gp_cancel_grip_work(void *data)
+{
+	struct odin2_gp *gp = data;
+
+	cancel_delayed_work_sync(&gp->grip_work);
+}
+
+static int odin2_gp_setup_grips(struct odin2_gp *gp)
+{
+	struct device *dev = &gp->serdev->dev;
+	unsigned int i;
+	int irq, ret;
+
+	gp->grips = devm_gpiod_get_array_optional(dev, "grip", GPIOD_IN);
+	if (IS_ERR(gp->grips))
+		return dev_err_probe(dev, PTR_ERR(gp->grips),
+				     "failed to get grip GPIOs\n");
+	if (!gp->grips)
+		return 0;
+
+	if (gp->grips->ndescs > ARRAY_SIZE(odin2_gp_grip_keymap))
+		return dev_err_probe(dev, -EINVAL, "too many grip GPIOs\n");
+
+	for (i = 0; i < gp->grips->ndescs; i++)
+		input_set_capability(gp->input, EV_KEY, odin2_gp_grip_keymap[i]);
+
+	INIT_DELAYED_WORK(&gp->grip_work, odin2_gp_grip_work);
+
+	/* Registered before the IRQs so that it runs after they are freed */
+	ret = devm_add_action_or_reset(dev, odin2_gp_cancel_grip_work, gp);
+	if (ret)
+		return ret;
+
+	for (i = 0; i < gp->grips->ndescs; i++) {
+		irq = gpiod_to_irq(gp->grips->desc[i]);
+		if (irq < 0)
+			return dev_err_probe(dev, irq,
+					     "no IRQ for grip GPIO %u\n", i);
+
+		ret = devm_request_irq(dev, irq, odin2_gp_grip_irq,
+				       IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+				       "ayn-odin2-gamepad-grip", gp);
+		if (ret)
+			return dev_err_probe(dev, ret,
+					     "failed to request grip IRQ %d\n", irq);
+	}
+
+	return 0;
+}
+
 static void odin2_gp_power_off(void *data)
 {
 	struct odin2_gp *gp = data;
@@ -297,6 +401,10 @@ static int odin2_gp_probe(struct serdev_device *serdev)
 
 	gp->serdev = serdev;
 	serdev_device_set_drvdata(serdev, gp);
+
+	ret = devm_mutex_init(dev, &gp->report_lock);
+	if (ret)
+		return ret;
 
 	ret = devm_regulator_get_enable(dev, "vdd");
 	if (ret)
@@ -332,9 +440,17 @@ static int odin2_gp_probe(struct serdev_device *serdev)
 	input_set_abs_params(input, ABS_RZ, 0, ODIN2_GP_TRIGGER_MAX, 0,
 			     ODIN2_GP_TRIGGER_FLAT);
 
+	ret = odin2_gp_setup_grips(gp);
+	if (ret)
+		return ret;
+
 	ret = input_register_device(input);
 	if (ret)
 		return dev_err_probe(dev, ret, "failed to register input device\n");
+
+	/* Report the initial grip button state */
+	if (gp->grips)
+		mod_delayed_work(system_wq, &gp->grip_work, 0);
 
 	serdev_device_set_client_ops(serdev, &odin2_gp_serdev_ops);
 

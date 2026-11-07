@@ -518,7 +518,9 @@
 
 		vdd-supply = <&vreg_bob2>;
 		enable-gpios = <&tlmm 12 GPIO_ACTIVE_HIGH>;
-		pinctrl-0 = <&mcu_en_active>;
+		grip-gpios = <&tlmm 57 GPIO_ACTIVE_LOW>,
+			     <&tlmm 58 GPIO_ACTIVE_LOW>;
+		pinctrl-0 = <&mcu_en_active>, <&grip_keys_default>;
 		pinctrl-names = "default";
 	};
 };
@@ -530,4 +532,13 @@
 			"TX SWR_INPUT1", "ADC2_OUTPUT",
 			"DMIC3", "MIC BIAS3",
 			"TX SWR_INPUT7", "DMIC3_OUTPUT";
+};
+
+&tlmm {
+	grip_keys_default: grip-keys-default-state {
+		pins = "gpio57", "gpio58";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
 };
