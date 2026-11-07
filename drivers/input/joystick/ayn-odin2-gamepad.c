@@ -66,9 +66,16 @@
 
 #define ODIN2_GP_GRIP_DEBOUNCE_MS	20
 
+/*
+ * The face buttons are labelled in the Xbox layout: Y top, X left, B right,
+ * A bottom. They are reported by label, as xpad, hid-steam and hid-oxp do
+ * for the same layout, because userspace (SDL in particular) maps BTN_X and
+ * BTN_Y by label for every non-Sony controller. Reporting the top button as
+ * BTN_NORTH (== BTN_X) swaps X and Y in every SDL program.
+ */
 static const unsigned int odin2_gp_keymap[] = {
 	BTN_DPAD_UP,	BTN_DPAD_DOWN,	BTN_DPAD_LEFT,	BTN_DPAD_RIGHT,
-	BTN_NORTH,	BTN_WEST,	BTN_EAST,	BTN_SOUTH,
+	BTN_Y,		BTN_X,		BTN_B,		BTN_A,
 	BTN_TL,		BTN_TR,		BTN_SELECT,	BTN_START,
 	BTN_THUMBL,	BTN_THUMBR,	BTN_MODE,	BTN_BACK,
 };
