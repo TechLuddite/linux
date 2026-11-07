@@ -5773,7 +5773,7 @@ static ssize_t sweep_run_store(const struct class *c,
 
 	rc = haptics_enable_hpwr_vreg(chip, false);
 	if (rc < 0)
-		dev_err(chip->dev, "disable hpwr_vreg failed, rc=%d\n");
+		dev_err(chip->dev, "disable hpwr_vreg failed, rc=%d\n", rc);
 
 	return count;
 }
