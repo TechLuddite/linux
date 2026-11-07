@@ -41,7 +41,7 @@ examples:
     #include <dt-bindings/gpio/gpio.h>
 
     serial {
-        gamepad {
+        mcu {
             compatible = "ayntec,odin2-gamepad";
             vdd-supply = <&vreg_bob2>;
             enable-gpios = <&tlmm 12 GPIO_ACTIVE_HIGH>;
