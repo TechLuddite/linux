@@ -9,12 +9,15 @@
  *   http://www.si-en.com/product.asp?parentid=890
  */
 
+#include <linux/delay.h>
 #include <linux/device.h>
+#include <linux/gpio/consumer.h>
 #include <linux/i2c.h>
 #include <linux/kernel.h>
 #include <linux/leds.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/regulator/consumer.h>
 
 /* Used to indicate a device has no such register */
 #define IS31FL32XX_REG_NONE 0xFF
@@ -60,6 +63,7 @@ struct is31fl32xx_led_data {
 struct is31fl32xx_priv {
 	const struct is31fl32xx_chipdef *cdef;
 	struct i2c_client *client;
+	struct gpio_desc *shutdown_gpio;
 	bool pwm_22khz;
 	unsigned int num_leds;
 	struct is31fl32xx_led_data leds[];
@@ -589,6 +593,21 @@ static int is31fl32xx_probe(struct i2c_client *client)
 	priv->cdef = cdef;
 	i2c_set_clientdata(client, priv);
 
+	ret = devm_regulator_get_enable_optional(dev, "vdd");
+	if (ret && ret != -ENODEV)
+		return dev_err_probe(dev, ret, "Failed to enable vdd supply\n");
+
+	priv->shutdown_gpio = devm_gpiod_get_optional(dev, "shutdown",
+						      GPIOD_OUT_HIGH);
+	if (IS_ERR(priv->shutdown_gpio))
+		return dev_err_probe(dev, PTR_ERR(priv->shutdown_gpio),
+				     "Failed to get shutdown GPIO\n");
+
+	if (priv->shutdown_gpio) {
+		gpiod_set_value_cansleep(priv->shutdown_gpio, 0);
+		usleep_range(10000, 11000);
+	}
+
 	ret = is31fl32xx_parse_dt(dev, priv);
 	if (ret)
 		return ret;
@@ -609,6 +628,8 @@ static void is31fl32xx_remove(struct i2c_client *client)
 	if (ret)
 		dev_err(&client->dev, "Failed to reset registers on removal (%pe)\n",
 			ERR_PTR(ret));
+
+	gpiod_set_value_cansleep(priv->shutdown_gpio, 1);
 }
 
 /*
