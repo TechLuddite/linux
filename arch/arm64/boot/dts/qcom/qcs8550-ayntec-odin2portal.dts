@@ -513,7 +513,7 @@
 &uart15 {
 	status = "okay";
 
-	gamepad: gamepad {
+	gamepad: mcu {
 		compatible = "ayntec,odin2-gamepad";
 
 		vdd-supply = <&vreg_bob2>;
