@@ -60,6 +60,7 @@ struct is31fl32xx_led_data {
 struct is31fl32xx_priv {
 	const struct is31fl32xx_chipdef *cdef;
 	struct i2c_client *client;
+	bool pwm_22khz;
 	unsigned int num_leds;
 	struct is31fl32xx_led_data leds[];
 };
@@ -364,6 +365,13 @@ static int is31fl32xx_init_regs(struct is31fl32xx_priv *priv)
 		}
 	}
 
+	if (priv->pwm_22khz) {
+		ret = is31fl32xx_write(priv, cdef->output_frequency_setting_reg,
+				       IS31FL32XX_PWM_FREQUENCY_22KHZ);
+		if (ret)
+			return ret;
+	}
+
 	ret = is31fl32xx_software_shutdown(priv, false);
 	if (ret)
 		return ret;
@@ -421,17 +429,9 @@ static int is31fl32xx_parse_dt(struct device *dev,
 	const struct is31fl32xx_chipdef *cdef = priv->cdef;
 	int ret = 0;
 
-	if ((cdef->output_frequency_setting_reg != IS31FL32XX_REG_NONE) &&
-	    device_property_read_bool(dev, "issi,22khz-pwm")) {
-
-		ret = is31fl32xx_write(priv, cdef->output_frequency_setting_reg,
-				       IS31FL32XX_PWM_FREQUENCY_22KHZ);
-
-		if (ret) {
-			dev_err(dev, "Failed to write output PWM frequency register\n");
-			return ret;
-		}
-	}
+	priv->pwm_22khz =
+		cdef->output_frequency_setting_reg != IS31FL32XX_REG_NONE &&
+		device_property_read_bool(dev, "issi,22khz-pwm");
 
 	device_for_each_child_node_scoped(dev, child) {
 		struct led_init_data init_data = {};
