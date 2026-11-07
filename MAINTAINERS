@@ -4668,6 +4668,13 @@ S:	Maintained
 F:	Documentation/ABI/testing/sysfs-platform-ayaneo-ec
 F:	drivers/platform/x86/ayaneo-ec.c
 
+AYN ODIN 2 GAMEPAD DRIVER
+M:	Perry Dale <techluddite@outlook.com>
+L:	linux-input@vger.kernel.org
+S:	Maintained
+F:	Documentation/devicetree/bindings/input/ayntec,odin2-gamepad.yaml
+F:	drivers/input/joystick/ayn-odin2-gamepad.c
+
 AZ6007 DVB DRIVER
 M:	Mauro Carvalho Chehab <mchehab@kernel.org>
 L:	linux-media@vger.kernel.org
