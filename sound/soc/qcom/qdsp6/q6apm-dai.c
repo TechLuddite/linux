@@ -352,6 +352,8 @@ static int q6apm_dai_prepare(struct snd_soc_component *component,
 	}
 
 	prtd->last_pos_index = 0;
+	/* ALSA sets appl_ptr to 0 after a successful prepare */
+	prtd->queue_ptr = 0;
 	prtd->pcm_count = snd_pcm_lib_period_bytes(substream);
 	if (q6apm_is_graph_in_push_pull_mode(prtd->graph)) {
 		if (prtd->pcm_size != prtd->push_pull_size) {
@@ -427,6 +429,14 @@ static int q6apm_dai_ack(struct snd_soc_component *component, struct snd_pcm_sub
 	int i, ret = 0, avail_periods;
 
 	if (q6apm_is_graph_in_push_pull_mode(prtd->graph))
+		return 0;
+
+	/*
+	 * ALSA calls .ack whenever appl_ptr moves, also after a stop and
+	 * before the next prepare. The graph has no queue to fill then, and
+	 * queue_ptr is out of step with appl_ptr until prepare resets both.
+	 */
+	if (prtd->state != Q6APM_STREAM_RUNNING)
 		return 0;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
